@@ -2,33 +2,47 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Welcome!</title>
+    <title>Коновалов сосни хуйца</title>
   <style>
     .kon-text 
     {   
       position: absolute;
-      margin: 0% -1%;
+      margin: 0 -8px;
       top: 0px; 
       bottom: -1px;
-      width: 101%; 
+      width: 100%; 
       flex: 2 ;
       background: gold;
-      text-align: center;
-      font-size: 125pt;
       padding: 20% 0%;
       font-family: sans-serif;
       animation-name: anim1;
-      animation-duration: 5s;
+      animation-duration: 10s;
       animation-iteration-count: infinite;
       
     }
     .kontent
     {
+      text-align: center;
+      margin-top: -20pt;
+      width: 450pt;
+      font-size: 72pt;
+      margin: auto;
+      padding: 0px;
       animation-name: anim2;
-      animation-duration: 3s;
+      animation-duration: 10s;
       animation-iteration-count: infinite;
       animation-timing-function: linear;
     }
+
+    .outline
+    {
+      text-shadow: 
+       -1px -1px 0 white,
+        1px -1px 0 white,
+        1px  1px 0 white,
+       -1px  1px 0 white;
+    }
+
     @keyframes anim2 {
       0% {transform: rotate(0deg);}
       25% {transform: rotate(90deg);}
@@ -38,17 +52,26 @@
     }
 
     @keyframes anim1 {
-      0% {background-color: red;}
-      66% {background-color: blue;}
-      33% {background-color: yellow;}
-      100% {background-color: red;}
+      0% {background-color: purple;}
+      20% {background-color: plum;}
+      40% {background-color: rebeccapurple;}
+      60% {background-color: mediumpurple;}
+      80% {background-color: magenta;}
+      100% {background-color: purple;}
     }
+
   </style>
   </head>
   <body>
       <div class="kon-text">
-        <div class="kontent">
+        <div class="kontent outline" style="text-shadow: 0 0 50px">
+            <div style="font-size: 50%">
+              да вы посмотрите
+            </div>
             оно крутится
+            <div style="font-size: 75%">
+              прикольно да?
+            </div>
         </div>
       </div>
   </body>
