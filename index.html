@@ -1,121 +1,50 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-      <script async src="https://www.googletagmanager.com/gtag/js?id=UA-132593054-1"></script>
-      <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'UA-132593054-1');
-      </script>
-      <meta charset="UTF-8">
-      <meta name="description" content="<:FurretWalk:628268999859372032>">
-      <title>Willkommen</title>
-      <style>
-      a {text-decoration: none}
-
-      .kon-text 
-      {   
-        position: absolute;
-        left: 0px;
-        top: 0px; 
-        bottom: 0px;
-        width: 100%; 
-        flex: 2 ;
-        background: gold;
-        padding: 20% 0%;
-        font-family: sans-serif;
-        animation-name: anim1;
-        animation-duration: 10s;
-        animation-iteration-count: infinite;
-        animation-timing-function: linear;
-
-      }
-      .kontent
-      {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        text-align: center;
-        width: 450pt;
-        font-size: 72pt;
-        margin: auto;
-        padding: 0px;
-        animation-name: anim2;
-        animation-duration: 10s;
-        animation-iteration-count: infinite;
-        animation-timing-function: linear;
-      }
-
-      audio
-      {
-        height: 20pt;
-        position: absolute;
-        left: 50%;
-        bottom: 20pt;
-        transform: translate(-50%, -50%);
-      }
-
-      .track_name
-      {
-        width: 100%;
-        font-size: 14pt;
-        position: absolute;
-        text-align: center;
-        bottom: 14pt;
+    <meta charset="UTF-8">
+    <meta name="description" content="<:FurretWalk:628268999859372032>">
+    <title>Homepage</title>
+    <style>
+      body {    
+        background-color: darkslateblue;
         color: white;
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        align-items: center;
       }
 
-      .outline
-      {
-        text-shadow: 
-         -1px -1px 0 black,
-          1px -1px 0 black,
-          1px  1px 0 black,
-         -1px  1px 0 black;
+      .placeholder {
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
       }
 
-      @keyframes anim2 {
-        0% {transform: translate(-50%, -50%) rotate(0deg) scale(1);}
-        25% {transform: translate(-50%, -50%) rotate(90deg) scale(.7) ;}
-        50% {transform: translate(-50%, -50%) rotate(180deg) scale(.8) ;}
-        75% {transform:  translate(-50%, -50%) rotate(270deg) scale(.6) ;}
-        100% {transform: translate(-50%, -50%) rotate(360deg) scale(1);}
+      .logos {
+        display: flex;
+        justify-content: space-evenly;
+        flex-direction: row;
       }
 
-      @keyframes anim1 {
-        0% {background-color: purple;}
-        20% {background-color: plum;}
-        40% {background-color: rebeccapurple;}
-        60% {background-color: mediumpurple;}
-        80% {background-color: magenta;}
-        100% {background-color: purple;}
+      .logos img {
+        height: 64px;
+        width: 64px;
       }
-
     </style>
   </head>
   <body>
-      <div class="kon-text">
-        <div class="kontent" style="text-shadow: 0 0 50px;">
-            <div style="font-size: 50%">
-              wow
-            </div>
-              it's spinning
-            <div style="font-size: 75%">
-              bottom text
-            </div>
-        </div>
-        <div class="track_name outline">
-          <audio controls autoplay loop>
-            <source src="https://drive.google.com/uc?authuser=0&id=1GhB3aqT7CbDQ9xnn2-admBnOt5Kpl8NV&export=download" type="audio/mpeg">
-            Your browser does not support the audio element.
-          </audio>
-          <div>
-            <i><a href="https://www.youtube.com/watch?v=bAgmGZ9iQ2Y">Macintosh Plus - Floral Shoppe - 02 リサフランク420 - 現代のコンピュ</a></i>
-          </div>
-        </div>
+    <div class="placeholder">
+      <p>Hi, this website is just a placeholder.</p>
+      <p>You can contact me by clicking one of these:</p>
+      <p><i  style="font-size: 18px;">(In order of likelihood of getting a quick response)</i></p>
+      <div class="logos">
+        <a href="https://t.me/sateviss"><img src="assets/telegram.svg"></a>
+        <a href="https://discord.com/users/280066743764910083"><img src="assets/discord.svg"></a>
+        <a href="https://twitter.com/satevisss"><img src="assets/twitter.svg"></a>
+        <a href="mailto:sateviss@gmail.com"><img src="assets/email.svg"></a>
       </div>
+    </div>
   </body>
 </html>
