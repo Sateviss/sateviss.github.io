@@ -6,7 +6,6 @@
     <title>Homepage</title>
     <style>
       body {    
-        background-color: darkslateblue;
         color: white;
         font-family: sans-serif;
         display: flex;
@@ -15,8 +14,31 @@
         margin: 0;
         align-items: center;
       }
+      
+      #background {
+        z-index: -1;
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        overflow: auto;
+        top: 0px;
+        left: 0px;
+        background-image: url('assets/background.jpg');
+        background-position: center; /* Center the image */
+        background-repeat: no-repeat; /* Do not repeat the image */
+        background-size: cover; /* Resize the background image to cover the entire container */
+        background-color: darkslateblue;
+        transition-property: filter;  
+        transition-duration: 1s;
+      }
+  
+      p {
+        text-shadow: 4px 4px 8px black;
+        margin: 20px 0px 20px 0px;
+      }
 
       .placeholder {
+        margin-top: 10%;
         font-size: 36px;
         font-weight: bold;
         text-align: center;
@@ -42,6 +64,7 @@
     </style>
   </head>
   <body>
+    <div id="background"></div>
     <div class="placeholder">
       <img class="avatar" src="https://avatars.githubusercontent.com/u/32936469?v=4">
       <p>Hi, this website is just a placeholder.</p>
@@ -51,9 +74,27 @@
         <a href="https://t.me/sateviss"><img src="assets/telegram.svg"></a>
         <a href="https://discord.com/users/280066743764910083"><img src="assets/discord.svg"></a>
         <a href="https://twitter.com/satevisss"><img src="assets/twitter.svg"></a>
+        <a href="https://www.instagram.com/eugene_pisarchick/"><img src="assets/instagram.svg"></a>
         <a href="mailto:sateviss@gmail.com"><img src="assets/email.svg"></a>
         <a href="www.linkedin.com/in/sateviss"><img src="assets/linkedin.svg"></a>
       </div>
     </div>
   </body>
+  <script> 
+    var tint = () => {
+      document.getElementById("background").style.filter = "brightness(70%)";
+    }
+    
+    var untint = () => {
+      document.getElementById("background").style.filter = "none";
+    }
+
+    var aTags = document.getElementsByTagName("a");
+    for (var i = 0; i < aTags.length; i++) {
+      var aTag = aTags.item(i);
+      aTag.onmouseenter = tint;
+      aTag.onmouseleave = untint;
+    }
+    
+  </script>
 </html>
