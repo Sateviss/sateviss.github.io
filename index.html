@@ -23,7 +23,6 @@
         overflow: auto;
         top: 0px;
         left: 0px;
-        background-image: url('assets/background.jpg');
         background-position: center; /* Center the image */
         background-repeat: no-repeat; /* Do not repeat the image */
         background-size: cover; /* Resize the background image to cover the entire container */
@@ -80,7 +79,14 @@
       </div>
     </div>
   </body>
-  <script> 
+  <script>
+    
+    function getRandomInt(max) {
+      return Math.floor(Math.random() * max);
+    }
+
+    document.getElementById("background").style.backgroundImage = `url(assets/backgrounds/bg-${(getRandomInt(15)+1).toString()}.jpg)`;
+
     var tint = () => {
       document.getElementById("background").style.filter = "brightness(70%)";
     }
