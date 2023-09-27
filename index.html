@@ -36,8 +36,14 @@
         margin: 20px 0px 20px 0px;
       }
 
+      a:hover {
+        transition-property: color;
+        transition-duration: 1s;
+        color: darkslateblue;
+      }
+
       .placeholder {
-        margin-top: 10%;
+        margin-top: 7%;
         font-size: 36px;
         font-weight: bold;
         text-align: center;
@@ -85,15 +91,20 @@
         <a href="mailto:sateviss@gmail.com"><img src="assets/email.svg"></a>
         <a href="https://www.linkedin.com/in/sateviss"><img src="assets/linkedin.svg"></a>
       </div>
+      <p><i  style="font-size: 18px;"><a onclick="gotoFractal()">Click here for some cool stuff</a></i></p>
     </div>
   </body>
   <script>
-    
+    function gotoFractal() {
+      console.log("Hi!")
+      location.href = `fractals/${getRandomInt(3)+1}.html`
+    }
+
     function getRandomInt(max) {
       return Math.floor(Math.random() * max);
     }
 
-    document.getElementById("background").style.backgroundImage = `url(assets/backgrounds/bg-${(getRandomInt(6)+1).toString()}.jpg)`;
+    document.getElementById("background").style.backgroundImage = `url(assets/backgrounds/bg-${(getRandomInt(12)+1).toString()}.jpg)`;
 
     var tint = () => {
       document.getElementById("background").style.filter = "brightness(60%)";
@@ -103,7 +114,7 @@
       document.getElementById("background").style.filter = "none";
     }
 
-    var aTags = document.getElementsByTagName("a");
+    var aTags = document.querySelectorAll("a, p");
     for (var i = 0; i < aTags.length; i++) {
       var aTag = aTags.item(i);
       aTag.onmouseenter = tint;
