@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Border Adder</title>
+    <!-- 
+    This is a web version of the BorderAdder tool
+    It processes images by:
+    - Adding white borders
+    - Making square versions
+    - Adding EXIF data as labels
+    - Preserving EXIF metadata
+    
+    Dependencies:
+    - exif-js: For reading EXIF data from images
+    - FileSaver.js: For saving processed images
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .preview-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .preview-image {
+            max-width: 300px;
+            max-height: 300px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        .output-log {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            background-color: #f5f5f5;
+            margin-top: 20px;
+        }
+        .font-preview {
+            font-size: 16px;
+            margin-top: 5px;
+            height: 24px;
+        }
+        
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .custom-font-row, .watermark-row {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Border Adder</h1>
+    
+    <div class="container">
+        <div class="upload-section">
+            <input type="file" id="fileInput" multiple accept="image/*">
+            <div><small>Select one or more images to process</small></div>
+        </div>
+        
+        <div class="options">
+            <div>
+                <label>Border Size (%): 
+                    <input type="number" id="borderPercent" value="3" min="0" max="50" step="0.5">
+                </label>
+            </div>
+            <div>
+                <label>Font Size (%): 
+                    <input type="number" id="fontPercent" value="1.5" min="0.5" max="5" step="0.1">
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" id="makeSquareCheckbox">
+                    Create Square Version
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" id="make2by3Checkbox">
+                    Create 2:3 Ratio Version
+                </label>
+            </div>
+            
+            <div class="custom-font-row">
+                <label>Custom Font (optional):
+                    <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2">
+                </label>
+                <div class="font-preview" id="fontPreview">Font preview (Courier default)</div>
+            </div>
+            
+            <div class="watermark-row">
+                <label>Left Side Text:
+                    <input type="text" id="leftTextInput" value="t.me/photographs_plus" style="width: 100%;">
+                </label>
+            </div>
+        </div>
+        
+        <button id="processBtn">Process Images</button>
+        
+        <div class="preview-container" id="previewContainer"></div>
+        
+        <div class="output-log" id="outputLog"></div>
+    </div>
+
+    <script>
+        // Lens dictionary equivalent to the Python version
+        const LENS_DICTIONARY = {
+            'E PZ 16-50mm F3.5-5.6 OSS': 'Sony 16-50',
+            '30mm F1.4 DC DN | Contemporary 016': 'Sigma 30',
+            'E 55-210mm F4.5-6.3 OSS': 'Sony 55-210',
+            'E 18-200mm F3.5-6.3 OSS': 'Sony 18-200',
+            '----': null,
+            '20.7 mm': 'DJI Mini 2'
+        };
+
+        // Function to get month name from month number
+        function getMonthName(monthNum) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return months[monthNum - 1];
+        }
+
+        // Function to add border to image
+        function addBorder(canvas, borderPercent) {
+            const size = Math.max(canvas.width, canvas.height);
+            const borderPx = Math.round(size * borderPercent);
+            
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = canvas.width + (borderPx * 2);
+            newCanvas.height = canvas.height + (borderPx * 2);
+            
+            const ctx = newCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+            ctx.drawImage(canvas, borderPx, borderPx);
+            
+            return newCanvas;
+        }
+
+        // Function to make image square
+        function makeSquare(canvas) {
+            const outSize = Math.max(canvas.width, canvas.height);
+            
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = outSize;
+            newCanvas.height = outSize;
+            
+            const ctx = newCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, outSize, outSize);
+            
+            const offsetX = (outSize - canvas.width) / 2;
+            const offsetY = (outSize - canvas.height) / 2;
+            ctx.drawImage(canvas, offsetX, offsetY);
+            
+            return newCanvas;
+        }
+
+        // Function to make image 2:3 ratio
+        function make2by3(canvas, squares = 'polaroid') {
+            let width = canvas.width;
+            let height = canvas.height;
+            let offset = [0.5, 0.5]; // center
+            
+            if (width > height || (width === height && squares === 'horizontal')) {
+                width = Math.floor(height * 3 / 2);
+            } else if (width < height || (width === height && squares === 'vertical')) {
+                height = Math.floor(width * 3 / 2);
+            } else if (width === height && squares === 'polaroid') {
+                height = Math.floor(width * 9.5 / 8);
+                offset = [0.5, 0.0]; // top center
+            } else if (width === height && squares === 'ignore') {
+                // Keep dimensions
+            }
+            
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = width;
+            newCanvas.height = height;
+            
+            const ctx = newCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            const offsetX = (width - canvas.width) * offset[0];
+            const offsetY = (height - canvas.height) * offset[1];
+            ctx.drawImage(canvas, offsetX, offsetY);
+            
+            return newCanvas;
+        }
+
+        // Function to add label to image
+        function addLabel(canvas, data, offsetPercent, fontPercent) {
+            const size = Math.max(canvas.width, canvas.height);
+            const offsetX = Math.round(size * offsetPercent[0]);
+            const offsetY = Math.round(size * offsetPercent[1]);
+            const fontSize = Math.round(size * fontPercent);
+            
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = canvas.width;
+            newCanvas.height = canvas.height;
+            
+            const ctx = newCanvas.getContext('2d');
+            ctx.drawImage(canvas, 0, 0);
+            
+            // Set text style
+            ctx.fillStyle = 'black';
+            ctx.font = `${fontSize}px ${customFontFamily}`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            
+            // Prepare text
+            let textParts = [data.date];
+            if (data.lens) textParts.push(data.lens);
+            textParts.push(`${data.shutter}s`);
+            if (data.fnumber) textParts.push(`f${data.fnumber}`);
+            
+            const text = textParts.join(', ');
+            
+            // Draw text
+            ctx.fillText(text, canvas.width - offsetX, canvas.height - offsetY);
+            
+            // Draw watermark/left text (using the custom input)
+            const leftText = document.getElementById('leftTextInput').value || 't.me/photographs_plus';
+            ctx.textAlign = 'left';
+            ctx.fillText(leftText, offsetX, canvas.height - offsetY);
+            
+            return newCanvas;
+        }
+
+        // Function to extract photo data from EXIF
+        function getPhotoData(exifData) {
+            let lens = null;
+            if (exifData.LensModel) {
+                if (LENS_DICTIONARY[exifData.LensModel] === undefined) {
+                    log(`Unknown Lens "${exifData.LensModel}"`);
+                } else {
+                    lens = LENS_DICTIONARY[exifData.LensModel];
+                }
+            }
+            
+            let dateTime = null;
+            if (exifData.DateTimeOriginal) {
+                const dateParts = exifData.DateTimeOriginal.split(' ')[0].split(':');
+                const year = dateParts[0];
+                const month = parseInt(dateParts[1]);
+                const day = parseInt(dateParts[2]);
+                dateTime = `${day} ${getMonthName(month)} ${year}`;
+            }
+            
+            let shutter = null;
+            if (exifData.ExposureTime) {
+                const exposureValue = exifData.ExposureTime;
+                if (exposureValue < 1) {
+                    // Convert decimal to fraction
+                    const denominator = Math.round(1 / exposureValue);
+                    shutter = `1/${denominator}`;
+                } else {
+                    shutter = `${exposureValue}`;
+                }
+            }
+            
+            let fnumber = null;
+            if (exifData.FNumber) {
+                fnumber = exifData.FNumber;
+            }
+            
+            let iso = null;
+            if (exifData.ISOSpeedRatings) {
+                iso = exifData.ISOSpeedRatings;
+            }
+            
+            return {
+                date: dateTime,
+                lens: lens,
+                shutter: shutter,
+                fnumber: fnumber,
+                iso: iso
+            };
+        }
+
+        // Log output
+        function log(message) {
+            const outputLog = document.getElementById('outputLog');
+            outputLog.innerHTML += message + '<br>';
+            outputLog.scrollTop = outputLog.scrollHeight;
+        }
+
+        // Process image function
+        function processImage(file, options) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        // Get EXIF data
+                        EXIF.getData(img, function() {
+                            try {
+                                const exifData = EXIF.getAllTags(this);
+                                const photoData = getPhotoData(exifData);
+                                
+                                // Create canvas with image
+                                const canvas = document.createElement('canvas');
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0);
+                                
+                                // Process normal version
+                                let processedCanvas = addBorder(canvas, options.borderPercent);
+                                processedCanvas = addLabel(processedCanvas, photoData, [0.03, 0.0075], options.fontPercent);
+                                
+                                // Process square version if requested
+                                let squareCanvas = null;
+                                if (options.makeSquare) {
+                                    let squareTmp = addBorder(canvas, options.borderPercent);
+                                    squareTmp = makeSquare(squareTmp);
+                                    squareCanvas = addLabel(squareTmp, photoData, [0.03, 0.0075], options.fontPercent);
+                                }
+                                
+                                // Process 2:3 version if requested
+                                let ratio2x3Canvas = null;
+                                if (options.make2by3) {
+                                    let ratio2x3Tmp = addBorder(canvas, options.borderPercent);
+                                    ratio2x3Tmp = make2by3(ratio2x3Tmp, 'ignore');
+                                    ratio2x3Canvas = addLabel(ratio2x3Tmp, photoData, [0.03, 0.0075], options.fontPercent);
+                                }
+                                
+                                resolve({
+                                    fileName: file.name,
+                                    normal: processedCanvas,
+                                    square: squareCanvas,
+                                    ratio2x3: ratio2x3Canvas,
+                                    exifData: exifData
+                                });
+                            } catch (error) {
+                                reject(error);
+                            }
+                        });
+                    };
+                    
+                    img.onerror = function() {
+                        reject(new Error('Failed to load image'));
+                    };
+                    
+                    img.src = event.target.result;
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error('Failed to read file'));
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Download canvas as image
+        function downloadCanvas(canvas, fileName, prefix) {
+            canvas.toBlob(function(blob) {
+                saveAs(blob, `${prefix}_${fileName}`);
+            });
+        }
+
+        // Main process function
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const files = document.getElementById('fileInput').files;
+            if (files.length === 0) {
+                alert('Please select at least one image file');
+                return;
+            }
+            
+            const options = {
+                borderPercent: parseFloat(document.getElementById('borderPercent').value) / 100,
+                fontPercent: parseFloat(document.getElementById('fontPercent').value) / 100,
+                makeSquare: document.getElementById('makeSquareCheckbox').checked,
+                make2by3: document.getElementById('make2by3Checkbox').checked
+            };
+            
+            const previewContainer = document.getElementById('previewContainer');
+            previewContainer.innerHTML = '';
+            
+            document.getElementById('outputLog').innerHTML = '';
+            log(`Processing ${files.length} files...`);
+            
+            // Check if custom font is loaded
+            if (customFont) {
+                log(`Using custom font: ${customFont.family}`);
+            } else {
+                log('Using default Courier font');
+            }
+            
+            // Check if custom left text is set
+            const leftText = document.getElementById('leftTextInput').value;
+            if (leftText && leftText !== 't.me/photographs_plus') {
+                log(`Using custom left text: "${leftText}"`);
+            }
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    log(`Processing ${file.name}...`);
+                    const result = await processImage(file, options);
+                    
+                    // Create preview for normal version
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    
+                    const previewImage = document.createElement('img');
+                    previewImage.className = 'preview-image';
+                    previewImage.src = result.normal.toDataURL('image/jpeg');
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = 'Download';
+                    downloadBtn.addEventListener('click', function() {
+                        downloadCanvas(result.normal, result.fileName, 'PROCESSED');
+                    });
+                    
+                    previewItem.appendChild(previewImage);
+                    previewItem.appendChild(downloadBtn);
+                    previewContainer.appendChild(previewItem);
+                    
+                    // Create preview for square version if available
+                    if (result.square) {
+                        const squarePreviewItem = document.createElement('div');
+                        squarePreviewItem.className = 'preview-item';
+                        
+                        const squarePreviewImage = document.createElement('img');
+                        squarePreviewImage.className = 'preview-image';
+                        squarePreviewImage.src = result.square.toDataURL('image/jpeg');
+                        
+                        const squareDownloadBtn = document.createElement('button');
+                        squareDownloadBtn.textContent = 'Download Square';
+                        squareDownloadBtn.addEventListener('click', function() {
+                            downloadCanvas(result.square, result.fileName, 'SQUARE');
+                        });
+                        
+                        squarePreviewItem.appendChild(squarePreviewImage);
+                        squarePreviewItem.appendChild(squareDownloadBtn);
+                        previewContainer.appendChild(squarePreviewItem);
+                    }
+                    
+                    // Create preview for 2:3 version if available
+                    if (result.ratio2x3) {
+                        const ratio2x3PreviewItem = document.createElement('div');
+                        ratio2x3PreviewItem.className = 'preview-item';
+                        
+                        const ratio2x3PreviewImage = document.createElement('img');
+                        ratio2x3PreviewImage.className = 'preview-image';
+                        ratio2x3PreviewImage.src = result.ratio2x3.toDataURL('image/jpeg');
+                        
+                        const ratio2x3DownloadBtn = document.createElement('button');
+                        ratio2x3DownloadBtn.textContent = 'Download 2:3';
+                        ratio2x3DownloadBtn.addEventListener('click', function() {
+                            downloadCanvas(result.ratio2x3, result.fileName, 'RATIO2x3');
+                        });
+                        
+                        ratio2x3PreviewItem.appendChild(ratio2x3PreviewImage);
+                        ratio2x3PreviewItem.appendChild(ratio2x3DownloadBtn);
+                        previewContainer.appendChild(ratio2x3PreviewItem);
+                    }
+                    
+                    log(`Processed ${file.name} successfully`);
+                } catch (error) {
+                    log(`Error processing ${file.name}: ${error.message}`);
+                    console.error(error);
+                }
+            }
+            
+            log('All images processed');
+        });
+
+        // Global variable to store custom font if loaded
+        let customFont = null;
+        let customFontFamily = 'Courier, monospace';
+
+        // Handle custom font upload
+        document.getElementById('fontFileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // Generate a unique font family name
+                    const fontFamilyName = 'customFont_' + Math.random().toString(36).substring(2, 9);
+                    
+                    // Create and load the font
+                    const fontFace = new FontFace(fontFamilyName, e.target.result);
+                    fontFace.load().then(function(loadedFace) {
+                        // Add the font to the document
+                        document.fonts.add(loadedFace);
+                        
+                        // Save the font family name for later use
+                        customFontFamily = fontFamilyName;
+                        customFont = loadedFace;
+                        
+                        // Update the preview
+                        const previewEl = document.getElementById('fontPreview');
+                        previewEl.style.fontFamily = fontFamilyName;
+                        previewEl.textContent = 'Custom font: ' + file.name;
+                        
+                        log('Custom font loaded successfully');
+                    }).catch(function(error) {
+                        log('Error loading font: ' + error.message);
+                        console.error(error);
+                    });
+                } catch (error) {
+                    log('Error processing font: ' + error.message);
+                    console.error(error);
+                }
+            };
+            
+            reader.onerror = function() {
+                log('Failed to read font file');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
