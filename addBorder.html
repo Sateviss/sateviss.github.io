@@ -129,6 +129,13 @@
                     <input type="text" id="customLensInput" placeholder="Leave empty to use EXIF data" style="width: 100%;">
                 </label>
             </div>
+
+            <div class="watermark-row">
+                <label>Additional Vertical Offset (%):
+                    <input type="number" id="additionalVerticalOffset" value="0" min="0" max="20" step="0.25" style="width: 60px;">
+                </label>
+                <div><small>Extra space from bottom edge (adds to default 0.75% offset)</small></div>
+            </div>
         </div>
         
         <button id="processBtn">Process Images</button>
@@ -355,16 +362,21 @@
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0);
                                 
+                                // Base vertical offset (0.75%)
+                                const baseVerticalOffset = 0.0075;
+                                // Calculate total vertical offset (base + additional)
+                                const totalVerticalOffset = baseVerticalOffset + options.additionalVerticalOffset;
+                                
                                 // Process normal version
                                 let processedCanvas = addBorder(canvas, options.borderPercent);
-                                processedCanvas = addLabel(processedCanvas, photoData, [0.03, 0.0075], options.fontPercent);
+                                processedCanvas = addLabel(processedCanvas, photoData, [0.03, totalVerticalOffset], options.fontPercent);
                                 
                                 // Process square version if requested
                                 let squareCanvas = null;
                                 if (options.makeSquare) {
                                     let squareTmp = addBorder(canvas, options.borderPercent);
                                     squareTmp = makeSquare(squareTmp);
-                                    squareCanvas = addLabel(squareTmp, photoData, [0.03, 0.0075], options.fontPercent);
+                                    squareCanvas = addLabel(squareTmp, photoData, [0.03, totalVerticalOffset], options.fontPercent);
                                 }
                                 
                                 // Process 2:3 version if requested
@@ -372,7 +384,7 @@
                                 if (options.make2by3) {
                                     let ratio2x3Tmp = addBorder(canvas, options.borderPercent);
                                     ratio2x3Tmp = make2by3(ratio2x3Tmp, 'ignore');
-                                    ratio2x3Canvas = addLabel(ratio2x3Tmp, photoData, [0.03, 0.0075], options.fontPercent);
+                                    ratio2x3Canvas = addLabel(ratio2x3Tmp, photoData, [0.03, totalVerticalOffset], options.fontPercent);
                                 }
                                 
                                 resolve({
@@ -422,7 +434,8 @@
                 borderPercent: parseFloat(document.getElementById('borderPercent').value) / 100,
                 fontPercent: parseFloat(document.getElementById('fontPercent').value) / 100,
                 makeSquare: document.getElementById('makeSquareCheckbox').checked,
-                make2by3: document.getElementById('make2by3Checkbox').checked
+                make2by3: document.getElementById('make2by3Checkbox').checked,
+                additionalVerticalOffset: parseFloat(document.getElementById('additionalVerticalOffset').value || "0") / 100
             };
             
             const previewContainer = document.getElementById('previewContainer');
@@ -448,6 +461,11 @@
             const lensOverride = document.getElementById('customLensInput').value.trim();
             if (lensOverride) {
                 log(`Using lens name override: "${lensOverride}"`);
+            }
+            
+            // Log the vertical offset setting
+            if (options.additionalVerticalOffset > 0) {
+                log(`Using additional vertical offset: ${options.additionalVerticalOffset * 100}%`);
             }
             
             for (let i = 0; i < files.length; i++) {
