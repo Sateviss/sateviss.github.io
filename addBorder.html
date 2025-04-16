@@ -4,18 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Border Adder</title>
-    <!-- 
-    This is a web version of the BorderAdder tool
-    It processes images by:
-    - Adding white borders
-    - Making square versions
-    - Adding EXIF data as labels
-    - Preserving EXIF metadata
-    
-    Dependencies:
-    - exif-js: For reading EXIF data from images
-    - FileSaver.js: For saving processed images
-    -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <style>
@@ -85,6 +73,7 @@
 </head>
 <body>
     <h1>Border Adder</h1>
+    <p>Vibe coded by Claude 3.7 from a manually created Python script as reference</p>
     
     <div class="container">
         <div class="upload-section">
@@ -120,12 +109,24 @@
                 <label>Custom Font (optional):
                     <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2">
                 </label>
+                <div style="margin-top: 8px;">
+                    <label>Or specify font family:
+                        <input type="text" id="fontFamilyInput" placeholder="e.g., Arial, sans-serif" style="width: 70%;">
+                        <button type="button" id="applyFontBtn" style="padding: 2px 8px;">Apply</button>
+                    </label>
+                </div>
                 <div class="font-preview" id="fontPreview">Font preview (Courier default)</div>
             </div>
             
             <div class="watermark-row">
                 <label>Left Side Text:
                     <input type="text" id="leftTextInput" value="t.me/photographs_plus" style="width: 100%;">
+                </label>
+            </div>
+
+            <div class="watermark-row">
+                <label>Custom Lens Name (overrides EXIF data):
+                    <input type="text" id="customLensInput" placeholder="Leave empty to use EXIF data" style="width: 100%;">
                 </label>
             </div>
         </div>
@@ -144,6 +145,8 @@
             '30mm F1.4 DC DN | Contemporary 016': 'Sigma 30',
             'E 55-210mm F4.5-6.3 OSS': 'Sony 55-210',
             'E 18-200mm F3.5-6.3 OSS': 'Sony 18-200',
+            'RICOH GR IIIx HDF': 'Ricoh GR IIIx HDF',
+            'Viltrox 25mm F1.7 E': 'Viltrox 25',
             '----': null,
             '20.7 mm': 'DJI Mini 2'
         };
@@ -245,7 +248,7 @@
             // Prepare text
             let textParts = [data.date];
             if (data.lens) textParts.push(data.lens);
-            textParts.push(`${data.shutter}s`);
+            if (data.shutter) textParts.push(`${data.shutter}s`);
             if (data.fnumber) textParts.push(`f${data.fnumber}`);
             
             const text = textParts.join(', ');
@@ -263,15 +266,25 @@
 
         // Function to extract photo data from EXIF
         function getPhotoData(exifData) {
+            // Get custom lens override if provided
+            const customLensOverride = document.getElementById('customLensInput').value.trim();
+            lensModel = exifData.lensModel ?? exifData['undefined']
+            log(`Detected EXIF lens: ${lensModel}`)
             let lens = null;
-            if (exifData.LensModel) {
-                if (LENS_DICTIONARY[exifData.LensModel] === undefined) {
-                    log(`Unknown Lens "${exifData.LensModel}"`);
+            if (customLensOverride) {
+                // Use the override value if provided
+                lens = customLensOverride;
+                log(`Using custom lens name: "${lens}"`);
+            } else if (lensModel) {
+                // Use EXIF data if available and no override
+                if (!LENS_DICTIONARY[lensModel]) {
+                    log(`Unknown Lens "${lensModel}"`);
                 } else {
-                    lens = LENS_DICTIONARY[exifData.LensModel];
+                    lens = LENS_DICTIONARY[lensModel];
                 }
             }
             
+            // Rest of the function remains the same
             let dateTime = null;
             if (exifData.DateTimeOriginal) {
                 const dateParts = exifData.DateTimeOriginal.split(' ')[0].split(':');
@@ -331,9 +344,10 @@
                         // Get EXIF data
                         EXIF.getData(img, function() {
                             try {
-                                const exifData = EXIF.getAllTags(this);
+                                const exifData = EXIF.getAllTags(this);               
                                 const photoData = getPhotoData(exifData);
-                                
+                                log(`Extracted EXIF data ${JSON.stringify(photoData)}`)         
+        
                                 // Create canvas with image
                                 const canvas = document.createElement('canvas');
                                 canvas.width = img.width;
@@ -430,6 +444,12 @@
                 log(`Using custom left text: "${leftText}"`);
             }
             
+            // Check if lens override is set
+            const lensOverride = document.getElementById('customLensInput').value.trim();
+            if (lensOverride) {
+                log(`Using lens name override: "${lensOverride}"`);
+            }
+            
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 try {
@@ -508,10 +528,49 @@
         let customFont = null;
         let customFontFamily = 'Courier, monospace';
 
-        // Handle custom font upload
+        // Set initial font preview to match default font
+        document.addEventListener('DOMContentLoaded', function() {
+            const previewEl = document.getElementById('fontPreview');
+            previewEl.style.fontFamily = customFontFamily;
+            
+            // Add handler for the Apply button for font family input
+            document.getElementById('applyFontBtn').addEventListener('click', applyFontFamily);
+            
+            // Also apply when pressing Enter in the input field
+            document.getElementById('fontFamilyInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyFontFamily();
+                }
+            });
+        });
+
+        // Function to apply the font family from input
+        function applyFontFamily() {
+            const fontFamilyInput = document.getElementById('fontFamilyInput');
+            const fontFamily = fontFamilyInput.value.trim();
+            
+            if (fontFamily) {
+                // Reset custom font if we're using a system font
+                customFont = null;
+                customFontFamily = fontFamily;
+                
+                // Update the preview
+                const previewEl = document.getElementById('fontPreview');
+                previewEl.style.fontFamily = fontFamily;
+                previewEl.textContent = 'Using font: ' + fontFamily;
+                
+                log('Font set to: ' + fontFamily);
+            }
+        }
+
+        // Handle custom font upload (existing code)
         document.getElementById('fontFileInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
+            
+            // Clear the font family input when uploading a font file
+            document.getElementById('fontFamilyInput').value = '';
             
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -550,6 +609,20 @@
             };
             
             reader.readAsArrayBuffer(file);
+        });
+
+        // Handle apply font button click
+        document.getElementById('applyFontBtn').addEventListener('click', function() {
+            const fontFamilyInput = document.getElementById('fontFamilyInput').value.trim();
+            if (fontFamilyInput) {
+                customFontFamily = fontFamilyInput;
+                const previewEl = document.getElementById('fontPreview');
+                previewEl.style.fontFamily = customFontFamily;
+                previewEl.textContent = 'Font preview (' + customFontFamily + ')';
+                log('Applied font family: ' + customFontFamily);
+            } else {
+                log('Please specify a font family');
+            }
         });
     </script>
 </body>
